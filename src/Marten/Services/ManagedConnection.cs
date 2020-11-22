@@ -398,7 +398,8 @@ namespace Marten.Services
 
         public void Dispose()
         {
-            _connection?.Dispose();
+            if (_ownsConnection)
+                _connection?.Dispose();
         }
     }
 }

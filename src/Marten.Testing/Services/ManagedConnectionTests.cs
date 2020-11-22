@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Threading.Tasks;
 using Marten.Services;
 using Marten.Testing.Harness;
@@ -360,6 +361,21 @@ namespace Marten.Testing.Services
                 logger.LastCommand.ShouldBe(cmd);
                 logger.LastException.ShouldBe(ex);
             }
+        }
+
+        [Fact]
+        public async Task external_connection_should_not_be_disposed()
+        {
+            var npgsqlConnection = new NpgsqlConnection(ConnectionSource.ConnectionString);
+            await npgsqlConnection.OpenAsync();
+            var npgsqlTransaction = await npgsqlConnection.BeginTransactionAsync();
+            var sessionOptions = SessionOptions.ForTransaction(npgsqlTransaction);
+            sessionOptions.OwnsConnection = false; // from DocumentStore.buildManagedConnection when Transaction is not null
+
+            new ManagedConnection(sessionOptions,CommandRunnerMode.External, new NulloRetryPolicy())
+                .Dispose();
+
+            npgsqlConnection.State.ShouldBe(ConnectionState.Open);
         }
     }
 
